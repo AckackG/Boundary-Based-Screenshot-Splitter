@@ -107,4 +107,8 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json 
-longimage.png
+*.png
+
+# gui.spec
+# processor.spec
+# splitter.spec

@@ -31,7 +31,7 @@ This is a simple image cropping tool built with Python using Tkinter for the GUI
 
 1. Run the application:
    ```bash
-   python image_cropper.py
+   python gui.py
    ```
 
 2. Click "Open Image" to select an image file.

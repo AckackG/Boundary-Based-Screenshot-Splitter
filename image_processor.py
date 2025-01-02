@@ -1,6 +1,8 @@
 from PIL import Image
 from dataclasses import dataclass
 from typing import Tuple, Optional
+import cv2
+import numpy as np
 
 
 @dataclass
@@ -79,3 +81,34 @@ class ImageProcessor:
         if self.image_info:
             return int(preview_coord / self.image_info.scale_ratio)
         return preview_coord
+
+    def find_split_points(self, start_y: int, end_y: int) -> list[int]:
+        """
+        根据用户选择的特征区域，在图片中寻找所有可能的分割点
+
+        Args:
+            start_y: 特征区域的起始y坐标
+            end_y: 特征区域的结束y坐标
+
+        Returns:
+            分割点y坐标列表
+        """
+        # 将PIL图像转换为OpenCV格式
+        cv_image = cv2.cvtColor(np.array(self.original_image), cv2.COLOR_RGB2BGR)
+
+        # 提取特征模板
+        template_height = end_y - start_y
+        template = cv_image[start_y:end_y, :, :]
+
+        # 执行模板匹配
+        result = cv2.matchTemplate(cv_image, template, cv2.TM_CCOEFF_NORMED)
+
+        # 设置阈值，找到所有匹配点
+        threshold = 0.8
+        locations = np.where(result >= threshold)
+        split_points = locations[0].tolist()
+
+        # 对分割点进行过滤和排序
+        split_points = sorted(set(split_points))  # 去重并排序
+
+        return split_points

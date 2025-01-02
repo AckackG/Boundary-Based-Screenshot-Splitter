@@ -141,17 +141,49 @@ class ImageCropper:
             self.update_button_states("cropped")
 
     def prepare_split(self):
-        """准备垂直分割"""
+        """准备分割"""
         if not self.vertical_selection:
-            messagebox.showwarning("警告", "必须手动选择分割范围")
+            messagebox.showwarning("警告", "必须选择特征区域")
             return
+
+        start_y, end_y = self.vertical_selection
+        split_points = self.processor.find_split_points(start_y, end_y)
+
+        if not split_points:
+            messagebox.showwarning("警告", "未找到匹配的分割点")
+            return
+
+        # 存储找到的分割点
+        self.split_points = split_points
+        print(f"找到 {len(split_points)} 个分割点")
 
         # 更新按钮状态
         self.update_button_states("split")
 
     def process_image(self):
-        """处理图片（待实现）"""
-        print("处理图片功能待实现")
+        """处理图片"""
+        if not all([self.selection, self.vertical_selection, self.split_points]):
+            messagebox.showwarning("警告", "缺少必要的处理参数")
+            return
+
+        try:
+            from image_splitter import ImageSplitter
+
+            # 获取原始图片路径
+            file_path = self.processor.original_image.filename
+
+            # 创建分割器并处理
+            splitter = ImageSplitter(
+                image_path=file_path,
+                width_range=self.selection,
+                feature_range=self.vertical_selection,
+            )
+
+            splitter.process()
+            messagebox.showinfo("成功", "图片处理完成！")
+
+        except Exception as e:
+            messagebox.showerror("错误", f"处理图片时出错：{str(e)}")
 
     def on_press(self, event):
         self.start_x = event.x
