@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from PIL import ImageTk
 from image_processor import ImageProcessor
 
@@ -18,7 +18,7 @@ class ImageCropper:
         self.start_x = None
         self.rect = None
         self.selection = None
-        self.crop_button = None  # 裁剪按钮
+        self.vertical_selection = None  # 垂直分割选择
 
         # 创建按钮框架
         self.button_frame = tk.Frame(self.root)
@@ -27,12 +27,30 @@ class ImageCropper:
         # 创建界面
         self.create_widgets()
 
+        # 初始化按钮状态
+        self.update_button_states("init")
+
     def create_widgets(self):
-        # 创建打开文件按钮
-        open_button = tk.Button(
+        # 创建所有按钮
+        self.open_button = tk.Button(
             self.button_frame, text="打开图片", command=self.open_image
         )
-        open_button.pack(side="left", padx=5)
+        self.open_button.pack(side="left", padx=5)
+
+        self.crop_button = tk.Button(
+            self.button_frame, text="裁剪宽度", command=self.crop_width
+        )
+        self.crop_button.pack(side="left", padx=5)
+
+        self.split_button = tk.Button(
+            self.button_frame, text="选择分割", command=self.prepare_split
+        )
+        self.split_button.pack(side="left", padx=5)
+
+        self.process_button = tk.Button(
+            self.button_frame, text="处理图片", command=self.process_image
+        )
+        self.process_button.pack(side="left", padx=5)
 
         # 创建画布
         self.canvas = tk.Canvas(self.root)
@@ -42,6 +60,40 @@ class ImageCropper:
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
+
+    def update_button_states(self, state):
+        """更新按钮状态"""
+        states = {
+            "init": {
+                "open": "normal",
+                "crop": "disabled",
+                "split": "disabled",
+                "process": "disabled",
+            },
+            "opened": {
+                "open": "normal",
+                "crop": "normal",
+                "split": "disabled",
+                "process": "disabled",
+            },
+            "cropped": {
+                "open": "normal",
+                "crop": "disabled",
+                "split": "normal",
+                "process": "disabled",
+            },
+            "split": {
+                "open": "normal",
+                "crop": "disabled",
+                "split": "disabled",
+                "process": "normal",
+            },
+        }
+
+        self.open_button.config(state=states[state]["open"])
+        self.crop_button.config(state=states[state]["crop"])
+        self.split_button.config(state=states[state]["split"])
+        self.process_button.config(state=states[state]["process"])
 
     def open_image(self):
         file_path = filedialog.askopenfilename(
@@ -59,16 +111,51 @@ class ImageCropper:
             )
             self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
 
-            # 创建裁剪宽度按钮（如果尚未创建）
-            if not self.crop_button:
-                self.crop_button = tk.Button(
-                    self.button_frame, text="裁剪宽度", command=self.crop_width
-                )
-                self.crop_button.pack(side="left", padx=5)
-                self.button_frame.update()  # 强制更新按钮框架
+            # 重置选择状态
+            self.selection = None
+            self.vertical_selection = None
+            if self.rect:
+                self.canvas.delete(self.rect)
+                self.rect = None
+
+            # 更新按钮状态
+            self.update_button_states("opened")
+
+    def crop_width(self):
+        if self.processor.original_image:
+            if self.selection:
+                # 使用用户选择的宽度
+                start_x, end_x = self.selection
+            else:
+                # 使用图片的默认宽度
+                start_x, end_x = 0, self.processor.original_image.width
+
+            # 清除选择框
+            if self.rect:
+                self.canvas.delete(self.rect)
+                self.rect = None
+
+            print(f"裁剪后的宽度：{end_x - start_x}")
+
+            # 更新按钮状态
+            self.update_button_states("cropped")
+
+    def prepare_split(self):
+        """准备垂直分割"""
+        if not self.vertical_selection:
+            messagebox.showwarning("警告", "必须手动选择分割范围")
+            return
+
+        # 更新按钮状态
+        self.update_button_states("split")
+
+    def process_image(self):
+        """处理图片（待实现）"""
+        print("处理图片功能待实现")
 
     def on_press(self, event):
         self.start_x = event.x
+        self.start_y = event.y  # 添加y坐标记录
         if self.rect:
             self.canvas.delete(self.rect)
 
@@ -81,39 +168,50 @@ class ImageCropper:
             if self.processor.image_info
             else 2000
         )
-        self.rect = self.canvas.create_rectangle(
-            self.start_x,
-            0,
-            event.x,
-            preview_height,
-            outline="red",
-        )
+
+        # 根据当前激活的按钮决定是垂直还是水平选择框
+        if self.crop_button["state"] == "normal":
+            # 垂直选择框（全高度）
+            self.rect = self.canvas.create_rectangle(
+                self.start_x,
+                0,
+                event.x,
+                preview_height,
+                outline="red",
+            )
+        elif self.split_button["state"] == "normal":
+            # 水平选择框（全宽度）
+            preview_width = self.processor.image_info.preview_width
+            self.rect = self.canvas.create_rectangle(
+                0,
+                self.start_y,
+                preview_width,
+                event.y,
+                outline="blue",
+            )
 
     def on_release(self, event):
         if self.processor.image_info:
-            # 转换为原图坐标
-            real_start_x = self.processor.get_real_coordinates(
-                min(self.start_x, event.x)
-            )
-            real_end_x = self.processor.get_real_coordinates(max(self.start_x, event.x))
-            self.selection = (real_start_x, real_end_x)
-            print(f"原图选择范围：{self.selection}")
-
-    def crop_width(self):
-        if self.processor.original_image:
-            if self.selection:
-                # 使用用户选择的宽度
-                start_x, end_x = self.selection
-            else:
-                # 使用图片的默认宽度
-                start_x, end_x = 0, self.processor.original_image.width
-
-            # 裁剪图片
-            cropped_image = self.processor.original_image.crop(
-                (start_x, 0, end_x, self.processor.original_image.height)
-            )
-            cropped_image.show()  # 显示裁剪后的图片
-            print(f"裁剪后的宽度：{end_x - start_x}")
+            if self.crop_button["state"] == "normal":
+                # 垂直选择（宽度选择）
+                real_start_x = self.processor.get_real_coordinates(
+                    min(self.start_x, event.x)
+                )
+                real_end_x = self.processor.get_real_coordinates(
+                    max(self.start_x, event.x)
+                )
+                self.selection = (real_start_x, real_end_x)
+                print(f"宽度选择范围：{self.selection}")
+            elif self.split_button["state"] == "normal":
+                # 水平选择（分割选择）
+                real_start_y = self.processor.get_real_coordinates(
+                    min(self.start_y, event.y)
+                )
+                real_end_y = self.processor.get_real_coordinates(
+                    max(self.start_y, event.y)
+                )
+                self.vertical_selection = (real_start_y, real_end_y)
+                print(f"水平分割范围：{self.vertical_selection}")
 
 
 if __name__ == "__main__":

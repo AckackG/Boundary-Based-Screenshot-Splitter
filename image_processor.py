@@ -74,8 +74,8 @@ class ImageProcessor:
 
         return self.preview_image, self.image_info
 
-    def get_real_coordinates(self, preview_x: int) -> int:
+    def get_real_coordinates(self, preview_coord: int) -> int:
         """将预览图上的坐标转换为原图坐标"""
         if self.image_info:
-            return int(preview_x / self.image_info.scale_ratio)
-        return preview_x
+            return int(preview_coord / self.image_info.scale_ratio)
+        return preview_coord
