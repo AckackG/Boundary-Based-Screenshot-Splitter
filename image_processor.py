@@ -20,6 +20,8 @@ class ImageProcessor:
     DISPLAY_HEIGHT = 900  # 显示最大高度
 
     def __init__(self):
+        self.image = None
+        self.split_points = None
         self.original_image: Optional[Image.Image] = None
         self.preview_image: Optional[Image.Image] = None
         self.image_info: Optional[ImageInfo] = None
@@ -82,7 +84,7 @@ class ImageProcessor:
             return int(preview_coord / self.image_info.scale_ratio)
         return preview_coord
 
-    def find_split_points(self, start_y: int, end_y: int) -> list[int]:
+    def calculate_split_points(self, start_y: int, end_y: int) -> list[int]:
         """
         根据用户选择的特征区域，在图片中寻找所有可能的分割点
 
@@ -112,3 +114,17 @@ class ImageProcessor:
         split_points = sorted(set(split_points))  # 去重并排序
 
         return split_points
+
+    def process_image(self, start_y: int, end_y: int):
+        """
+        处理图片，计算分割点
+
+        Args:
+            start_y: 特征区域的起始y坐标
+            end_y: 特征区域的结束y坐标
+        """
+        if self.original_image is None:
+            raise ValueError("请先加载图片")
+
+        # 计算分割点
+        self.split_points = self.calculate_split_points(start_y, end_y)
