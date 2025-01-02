@@ -113,7 +113,16 @@ class ImageProcessor:
         # 对分割点进行过滤和排序
         split_points = sorted(set(split_points))  # 去重并排序
 
-        return split_points
+        # 添加最小间隔过滤
+        min_distance = 10  # 设置最小间隔
+        filtered_split_points = []
+        last_point = -min_distance
+        for point in split_points:
+            if point - last_point >= min_distance:
+                filtered_split_points.append(point)
+                last_point = point
+
+        return filtered_split_points
 
     def process_image(self, start_y: int, end_y: int):
         """

@@ -95,12 +95,12 @@ class ImageSplitter:
             start_y = split_points[i]
             end_y = split_points[i + 1]
 
-            # 切分图片
-            piece = image[start_y:end_y]
+            # 裁剪图片
+            cropped_image = image[start_y:end_y]
 
             # 生成输出文件名
             output_path = self.output_dir / f"{self.source_name}_{i+1}.png"
 
             # 保存图片
-            cv2.imwrite(str(output_path), piece)
+            cv2.imwrite(str(output_path), cropped_image)
             print(f"已保存: {output_path}")
