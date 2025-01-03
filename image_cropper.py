@@ -5,6 +5,8 @@ from image_processor import ImageProcessor
 from image_splitter import ImageSplitter
 from loguru import logger
 from pathlib import Path
+import os
+import subprocess
 
 # 配置日志
 log_path = Path("logs")
@@ -249,10 +251,16 @@ class ImageCropper:
                 log_callback=self.log_message,
             )
 
-            splitter.process()
+            pdf_path = splitter.process()
             self.progress_var.set(100)
             logger.success("图片处理完成")
-            messagebox.showinfo("成功", "图片处理完成！")
+
+            # 打开PDF所在文件夹
+            pdf_dir = pdf_path.parent
+            self.log_message(f"处理完成！PDF保存在：{pdf_dir}")
+
+            # 使用 after 方法在主线程中打开文件夹
+            self.root.after(100, self.open_folder, pdf_dir)
 
         except Exception as e:
             logger.error(f"处理图片时出错：{str(e)}")
@@ -260,6 +268,17 @@ class ImageCropper:
         finally:
             # 隐藏进度条
             self.progress_bar.pack_forget()
+
+    def open_folder(self, folder_path: Path):
+        """在主线程中安全地打开文件夹"""
+        try:
+            if os.name == "nt":  # Windows
+                os.startfile(folder_path)
+            else:  # Linux/Mac
+                subprocess.run(["xdg-open", str(folder_path)])
+        except Exception as e:
+            logger.error(f"打开文件夹时出错：{str(e)}")
+            messagebox.showerror("错误", f"打开文件夹时出错：{str(e)}")
 
     def update_progress(self, progress: float):
         """更新进度条"""

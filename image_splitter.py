@@ -5,6 +5,7 @@ from PIL import Image
 from pathlib import Path
 from typing import Tuple, List
 from loguru import logger
+from pdf_generator import PDFGenerator  # 添加导入
 
 
 class ImageSplitter:
@@ -32,10 +33,14 @@ class ImageSplitter:
         self.feature_range = feature_range
         self.progress_callback = progress_callback
         self.log_callback = log_callback
-        self.output_dir = Path("OUTPUT")
+
+        # 分离图片和PDF输出目录
+        self.output_dir = Path("OUTPUT/images")
+        self.pdf_dir = Path("OUTPUT/pdf")
 
         # 创建输出目录
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.pdf_dir.mkdir(parents=True, exist_ok=True)
 
         # 获取源文件名（不含扩展名）
         self.source_name = Path(image_path).stem
@@ -66,7 +71,15 @@ class ImageSplitter:
         # 4. 根据分割点切分图片并保存
         self._log(f"开始保存分割后的图片...")
         self._split_and_save(cropped_image, split_points)
-        self._log("处理完成！")
+        self._log("图片分割完成！")
+
+        # 生成PDF
+        self._log("正在生成PDF...")
+        pdf_gen = PDFGenerator(self.output_dir, self.pdf_dir)
+        pdf_path = pdf_gen.generate()
+        self._log("PDF生成完成！")
+
+        return pdf_path  # 返回生成的PDF路径
 
     def _crop_width(self) -> np.ndarray:
         """裁剪图片宽度"""
