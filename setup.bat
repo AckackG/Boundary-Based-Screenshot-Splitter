@@ -1,14 +1,14 @@
 @echo off
-echo 正在创建虚拟环境...
+echo Creating virtual environment...
 python -m venv venv
 
-echo 激活虚拟环境...
+echo Activating environment...
 call venv\Scripts\activate.bat
 
-echo 安装依赖...
+echo Installing dependencies...
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-echo 设置完成！
-echo 您现在可以运行 start.bat 来启动应用程序
+echo Setup completed!
+echo You can now run start.bat to launch the application
 pause 

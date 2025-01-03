@@ -353,7 +353,11 @@ class ImageCropper:
         logger.info(message)
 
 
-if __name__ == "__main__":
+def run():
     root = tk.Tk()
     app = ImageCropper(root)
     root.mainloop()
+
+
+if __name__ == "__main__":
+    run()

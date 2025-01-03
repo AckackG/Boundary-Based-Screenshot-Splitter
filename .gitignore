@@ -111,3 +111,9 @@ OUTPUT/
 # gui.spec
 # processor.spec
 # splitter.spec
+
+# PyInstaller
+build/
+dist/
+*.spec
+build_env/
