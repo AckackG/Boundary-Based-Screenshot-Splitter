@@ -107,8 +107,7 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json 
-*.png
-
+OUTPUT/
 # gui.spec
 # processor.spec
 # splitter.spec
