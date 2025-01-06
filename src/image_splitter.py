@@ -5,7 +5,7 @@ from PIL import Image
 from pathlib import Path
 from typing import Tuple, List
 from loguru import logger
-from pdf_generator import PDFGenerator  # 添加导入
+from src.pdf_generator import PDFGenerator  # 添加导入
 
 
 class ImageSplitter:
@@ -35,8 +35,8 @@ class ImageSplitter:
         self.log_callback = log_callback
 
         # 分离图片和PDF输出目录
-        self.output_dir = Path("OUTPUT/images")
-        self.pdf_dir = Path("OUTPUT/pdf")
+        self.output_dir = Path("output/images")
+        self.pdf_dir = Path("output/pdf")
 
         # 创建输出目录
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -103,7 +103,7 @@ class ImageSplitter:
         result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
         # 设置阈值，找到所有匹配点
-        threshold = 0.8
+        threshold = 0.9
         locations = np.where(result >= threshold)[0]
 
         # 过滤和处理分割点

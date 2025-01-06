@@ -23,24 +23,15 @@
    2. 用截图工具截图全网页，我用的是 FastStoneCapture 的滚动截图功能
 2. 打开本软件，加载图片
    1. 在图片上框选(红色)，用于设置要保留的图片宽度。点击“裁剪宽度”按钮
-   2. ⭐再用蓝色框选标记边界区域，比如PDF页面之间灰色的分割线。点击“选择分割”按钮
+   2. 再用蓝色框选标记边界区域，比如PDF页面之间灰色的分割线。点击“选择分割”按钮
    3. 点击“处理图片”按钮，自动完成分割。完成后会打开PDF输出文件夹
 
 ## 为什么有这个项目
-在开发这个项目之前，我遇到了以下问题：
 
-1. 很多在线文档网站只能看不能下载，且无法用右键打印为PDF。所以只能用截图工具截取整页图片，然后手动裁剪。
+1. 很多在线文档网站**只能看不能下载，且无法用右键打印为PDF**。所以只能用截图工具截取整页图片，然后手动裁剪。
 2. 市面上现有的长图分割工具大多采用固定距离机械分割，无法智能识别文档的自然分界点
 3. 文档类网页的长截图通常在段落或章节之间有明显的视觉边界，这些边界可以作为智能分割的依据
 
----
-
-## 项目文件
-
-本项目包含以下主要组件：
-* `image_cropper.py`: 图像裁剪模块
-* `pdf_generator.py`: PDF 生成模块
-* `image_splitter.py`: 图像分割模块
 
 ---
 
@@ -70,17 +61,6 @@ Intelligently split long screenshots (such as those from Baidu Library, Docbaoba
 
 ## Why This Project
 
-Before developing this project, I encountered several challenges:
-
-1. Many online document websites only allow viewing but not downloading, and right-click PDF printing is disabled. The only option was to use screenshot tools and manually crop images.
+1. **Many online document websites only allow viewing but not downloading, and right-click PDF printing is disabled**. The only option was to use screenshot tools and manually crop images.
 2. Existing long image splitting tools mostly use fixed-distance mechanical splitting, unable to intelligently recognize natural document boundaries
 3. Document webpage screenshots usually have clear visual boundaries between paragraphs or chapters, which can serve as intelligent splitting points
-
----
-
-## Project Files
-
-This project contains the following main components:
-* `image_cropper.py`: Image cropping module
-* `pdf_generator.py`: PDF generation module
-* `image_splitter.py`: Image splitting module

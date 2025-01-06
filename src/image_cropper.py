@@ -1,15 +1,15 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import ImageTk
-from image_processor import ImageProcessor
-from image_splitter import ImageSplitter
+from src.image_processor import ImageProcessor
+from src.image_splitter import ImageSplitter
 from loguru import logger
 from pathlib import Path
 import os
 import subprocess
 
 # 配置日志
-log_path = Path("logs")
+log_path = Path("../logs")
 log_path.mkdir(exist_ok=True)
 logger.add(
     log_path / "app_{time}.log",

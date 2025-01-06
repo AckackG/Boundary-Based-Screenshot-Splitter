@@ -1,6 +1,6 @@
 import os
 import sys
-from image_cropper import run
+from src.image_cropper import run
 
 
 def resource_path(relative_path):
