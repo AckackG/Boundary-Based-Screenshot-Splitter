@@ -28,6 +28,27 @@ class ImageCropper:
         self.root = root
         self.root.title("图片裁剪工具")
 
+        # 设置窗口背景色
+        self.root.configure(bg="#f0f0f0")
+
+        # 定义字体
+        font_family = "微软雅黑"  # 尝试使用微软雅黑，如果不存在则使用默认字体
+        font_size = 9
+        self.default_font = (font_family, font_size)
+        self.root.option_add("*Font", self.default_font)
+
+        # 配置按钮样式
+        button_bg = "#e0e0e0"
+        button_fg = "#000000"
+        button_relief = "flat"
+
+        self.root.option_add("*Button.Background", button_bg)
+        self.root.option_add("*Button.Foreground", button_fg)
+        self.root.option_add("*Button.relief", button_relief)
+
+        # 配置Label样式
+        self.root.option_add("*Label.Background", "#f0f0f0")
+
         # 计算初始窗口高度为屏幕的 80%
         screen_height = self.root.winfo_screenheight()
         initial_height = int(screen_height * 0.8)
@@ -44,7 +65,7 @@ class ImageCropper:
         self.vertical_selection = None  # 垂直分割选择
 
         # 创建按钮框架
-        self.button_frame = tk.Frame(self.root)
+        self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
         self.button_frame.pack(side="top", fill="x", padx=5, pady=5)
 
         # 创建界面
@@ -59,21 +80,21 @@ class ImageCropper:
 
     def create_widgets(self, initial_height):
         # 创建主框架，用于左右布局
-        self.main_frame = tk.Frame(self.root)
+        self.main_frame = tk.Frame(self.root, bg="#f0f0f0")
         self.main_frame.pack(expand=True, fill="both", padx=5, pady=5)
 
         # 创建左侧框架
         self.left_frame = tk.Frame(
-            self.main_frame, height=initial_height
+            self.main_frame, height=initial_height, bg="#f0f0f0"
         )  # 设置初始高度
         self.left_frame.pack(side="left", expand=True, fill="both")
 
         # 创建右侧框架
-        self.right_frame = tk.Frame(self.main_frame)
+        self.right_frame = tk.Frame(self.main_frame, bg="#f0f0f0")
         self.right_frame.pack(side="right", fill="y", padx=(5, 0))
 
         # 创建按钮框架（放在左侧框架顶部）
-        self.button_frame = tk.Frame(self.left_frame)
+        self.button_frame = tk.Frame(self.left_frame, bg="#f0f0f0")
         self.button_frame.pack(side="top", fill="x", pady=(0, 5))
 
         # 创建所有按钮
@@ -98,7 +119,7 @@ class ImageCropper:
         self.process_button.pack(side="left", padx=5)
 
         # 创建画布（放在左侧框架）
-        self.canvas = tk.Canvas(self.left_frame)
+        self.canvas = tk.Canvas(self.left_frame, highlightthickness=0, bg="white")
         self.canvas.pack(expand=True, fill="both")
 
         # 绑定鼠标事件
@@ -108,9 +129,13 @@ class ImageCropper:
 
         # 添加日志文本框（放在右侧框架）
         # 添加标题标签
-        tk.Label(self.right_frame, text="处理日志").pack(side="top", pady=(0, 5))
+        tk.Label(self.right_frame, text="处理日志", bg="#f0f0f0").pack(
+            side="top", pady=(0, 5)
+        )
 
-        self.log_text = tk.Text(self.right_frame, width=30, height=20)
+        self.log_text = tk.Text(
+            self.right_frame, width=30, height=20, bg="white", fg="black"
+        )
         self.log_text.pack(side="left", fill="y")
 
         # 添加滚动条
@@ -398,6 +423,14 @@ class ImageCropper:
 
 def run():
     root = tk.Tk()
+
+    # 获取屏幕高度
+    screen_height = root.winfo_screenheight()
+    # 计算顶部偏移量 (5% of screen height)
+    offset = int(screen_height * 0.05)
+    # 设置窗口初始位置
+    root.geometry(f"+0+{offset}")
+
     app = ImageCropper(root)
     root.mainloop()
 
