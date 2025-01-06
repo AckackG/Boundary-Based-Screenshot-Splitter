@@ -7,6 +7,8 @@ from loguru import logger
 from pathlib import Path
 import os
 import subprocess
+import threading
+import queue  # 导入 queue 模块
 
 # 配置日志
 log_path = Path("../logs")
@@ -26,6 +28,10 @@ class ImageCropper:
         self.root = root
         self.root.title("图片裁剪工具")
 
+        # 计算初始窗口高度为屏幕的 80%
+        screen_height = self.root.winfo_screenheight()
+        initial_height = int(screen_height * 0.8)
+
         # 初始化图像处理器
         self.processor = ImageProcessor()
 
@@ -42,18 +48,24 @@ class ImageCropper:
         self.button_frame.pack(side="top", fill="x", padx=5, pady=5)
 
         # 创建界面
-        self.create_widgets()
+        self.create_widgets(initial_height)  # 传递初始高度
 
         # 初始化按钮状态
         self.update_button_states("init")
 
-    def create_widgets(self):
+        # 创建一个队列用于线程间通信
+        self.log_queue = queue.Queue()
+        self.root.after(100, self.process_log_queue)  # 定期处理日志队列
+
+    def create_widgets(self, initial_height):
         # 创建主框架，用于左右布局
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack(expand=True, fill="both", padx=5, pady=5)
 
         # 创建左侧框架
-        self.left_frame = tk.Frame(self.main_frame)
+        self.left_frame = tk.Frame(
+            self.main_frame, height=initial_height
+        )  # 设置初始高度
         self.left_frame.pack(side="left", expand=True, fill="both")
 
         # 创建右侧框架
@@ -81,7 +93,7 @@ class ImageCropper:
         self.split_button.pack(side="left", padx=5)
 
         self.process_button = tk.Button(
-            self.button_frame, text="处理图片", command=self.process_image
+            self.button_frame, text="处理图片", command=self.start_process_image
         )
         self.process_button.pack(side="left", padx=5)
 
@@ -165,12 +177,18 @@ class ImageCropper:
                 f"图片加载完成，尺寸：{image_info.width}x{image_info.height}"
             )
 
+            # 限制窗口高度为屏幕的 80%
+            screen_height = self.root.winfo_screenheight()
+            max_height = int(screen_height * 0.8)
+            new_height = min(image_info.preview_height, max_height)
+
             # 显示图片
             self.photo = ImageTk.PhotoImage(preview_image)
-            self.canvas.config(
-                width=image_info.preview_width, height=image_info.preview_height
-            )
+            self.canvas.config(width=image_info.preview_width, height=new_height)
             self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
+
+            # 更新左侧框架的高度
+            self.left_frame.config(height=new_height)
 
             # 重置选择状态
             self.selection = None
@@ -210,18 +228,24 @@ class ImageCropper:
         # 只更新按钮状态，不进行计算
         self.update_button_states("split")
 
-    def process_image(self):
-        """处理图片"""
+    def start_process_image(self):
+        """启动图片处理线程"""
         if not all([self.selection, self.vertical_selection]):
             logger.warning("未选择裁剪宽度或特征区域")
             messagebox.showwarning("警告", "请先选择裁剪宽度和特征区域")
             return
 
+        # 创建并启动线程
+        threading.Thread(target=self._process_image_in_thread).start()
+
+    def _process_image_in_thread(self):
+        """在线程中处理图片"""
+        self.root.config(cursor="wait")  # 设置鼠标为等待状态
+        self.progress_bar.pack(side="bottom", fill="x", padx=5, pady=5)
+        self.progress_var.set(0)
+
         try:
             logger.info("开始处理图片")
-            # 显示进度条
-            self.progress_bar.pack(side="bottom", fill="x", padx=5, pady=5)
-            self.progress_var.set(0)
 
             # 获取分割区域
             start_y, end_y = self.vertical_selection
@@ -229,14 +253,14 @@ class ImageCropper:
             # 计算分割点
             self.processor.process_image(start_y, end_y)
             self.split_points = self.processor.split_points
-            self.progress_var.set(30)
+            self.update_progress(30)
 
             if not self.split_points:
                 messagebox.showwarning("警告", "未找到匹配的分割点")
                 return
 
             self.log_message(f"找到 {len(self.split_points)} 个分割点")
-            self.progress_var.set(50)
+            self.update_progress(50)
 
             # 获取原始图片路径
             file_path = self.processor.original_image.filename
@@ -247,16 +271,16 @@ class ImageCropper:
                 image_path=file_path,
                 width_range=self.selection,
                 feature_range=self.vertical_selection,
-                progress_callback=self.update_progress,
-                log_callback=self.log_message,
+                progress_callback=self.update_progress_from_thread,
+                log_callback=self.log_message_from_thread,
             )
 
             pdf_path = splitter.process()
-            self.progress_var.set(100)
+            self.update_progress(100)
             logger.success("图片处理完成")
 
             # 打开PDF所在文件夹
-            pdf_dir = pdf_path.parent
+            pdf_dir = Path(pdf_path).parent
             self.log_message(f"处理完成！PDF保存在：{pdf_dir}")
 
             # 使用 after 方法在主线程中打开文件夹
@@ -266,8 +290,27 @@ class ImageCropper:
             logger.error(f"处理图片时出错：{str(e)}")
             messagebox.showerror("错误", f"处理图片时出错：{str(e)}")
         finally:
-            # 隐藏进度条
             self.progress_bar.pack_forget()
+            self.root.config(cursor="")  # 恢复鼠标状态
+
+    def update_progress_from_thread(self, progress: float):
+        """在线程中更新进度条"""
+        self.root.after(0, self.progress_var.set, 50 + progress * 0.5)
+
+    def log_message_from_thread(self, message: str):
+        """在线程中发送日志消息到队列"""
+        self.log_queue.put(message)
+
+    def process_log_queue(self):
+        """处理日志队列中的消息"""
+        try:
+            while True:
+                message = self.log_queue.get_nowait()
+                self.log_message(message)
+                self.log_queue.task_done()
+        except queue.Empty:
+            pass
+        self.root.after(100, self.process_log_queue)
 
     def open_folder(self, folder_path: Path):
         """在主线程中安全地打开文件夹"""
@@ -282,7 +325,7 @@ class ImageCropper:
 
     def update_progress(self, progress: float):
         """更新进度条"""
-        self.progress_var.set(50 + progress * 0.5)  # 50-100%用于图片处理进度
+        self.progress_var.set(progress)  # 0-100%
 
     def on_press(self, event):
         self.start_x = event.x
