@@ -152,6 +152,6 @@ class ImageSplitter:
 
             # 更新进度和日志
             if self.progress_callback:
-                progress = (i + 1) / total_points
+                progress = (i + 1) / total_points  # 进度值在 0 到 1 之间
                 self.progress_callback(progress)
             self._log(f"已保存: {output_path}")

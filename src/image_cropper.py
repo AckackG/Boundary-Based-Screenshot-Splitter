@@ -146,14 +146,6 @@ class ImageCropper:
         self.log_text.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.log_text.yview)
 
-        # 添加进度条（放在主窗口底部）
-        self.progress_var = tk.DoubleVar()
-        self.progress_bar = ttk.Progressbar(
-            self.root, variable=self.progress_var, maximum=100
-        )
-        self.progress_bar.pack(side="bottom", fill="x", padx=5, pady=5)
-        self.progress_bar.pack_forget()  # 默认隐藏
-
     def update_button_states(self, state):
         """更新按钮状态"""
         states = {
@@ -215,6 +207,13 @@ class ImageCropper:
             # 更新左侧框架的高度
             self.left_frame.config(height=new_height)
 
+            # 获取屏幕高度
+            screen_height = self.root.winfo_screenheight()
+            # 计算顶部偏移量 (5% of screen height)
+            offset = int(screen_height * 0.05)
+            # 设置窗口初始位置
+            self.root.geometry(f"+0+{offset}")
+
             # 重置选择状态
             self.selection = None
             self.vertical_selection = None
@@ -266,8 +265,6 @@ class ImageCropper:
     def _process_image_in_thread(self):
         """在线程中处理图片"""
         self.root.config(cursor="wait")  # 设置鼠标为等待状态
-        self.progress_bar.pack(side="bottom", fill="x", padx=5, pady=5)
-        self.progress_var.set(0)
 
         try:
             logger.info("开始处理图片")
@@ -278,14 +275,12 @@ class ImageCropper:
             # 计算分割点
             self.processor.process_image(start_y, end_y)
             self.split_points = self.processor.split_points
-            self.update_progress(30)
 
             if not self.split_points:
                 messagebox.showwarning("警告", "未找到匹配的分割点")
                 return
 
             self.log_message(f"找到 {len(self.split_points)} 个分割点")
-            self.update_progress(50)
 
             # 获取原始图片路径
             file_path = self.processor.original_image.filename
@@ -296,12 +291,10 @@ class ImageCropper:
                 image_path=file_path,
                 width_range=self.selection,
                 feature_range=self.vertical_selection,
-                progress_callback=self.update_progress_from_thread,
                 log_callback=self.log_message_from_thread,
             )
 
             pdf_path = splitter.process()
-            self.update_progress(100)
             logger.success("图片处理完成")
 
             # 打开PDF所在文件夹
@@ -315,12 +308,7 @@ class ImageCropper:
             logger.error(f"处理图片时出错：{str(e)}")
             messagebox.showerror("错误", f"处理图片时出错：{str(e)}")
         finally:
-            self.progress_bar.pack_forget()
             self.root.config(cursor="")  # 恢复鼠标状态
-
-    def update_progress_from_thread(self, progress: float):
-        """在线程中更新进度条"""
-        self.root.after(0, self.progress_var.set, 50 + progress * 0.5)
 
     def log_message_from_thread(self, message: str):
         """在线程中发送日志消息到队列"""
@@ -347,10 +335,6 @@ class ImageCropper:
         except Exception as e:
             logger.error(f"打开文件夹时出错：{str(e)}")
             messagebox.showerror("错误", f"打开文件夹时出错：{str(e)}")
-
-    def update_progress(self, progress: float):
-        """更新进度条"""
-        self.progress_var.set(progress)  # 0-100%
 
     def on_press(self, event):
         self.start_x = event.x
@@ -423,13 +407,6 @@ class ImageCropper:
 
 def run():
     root = tk.Tk()
-
-    # 获取屏幕高度
-    screen_height = root.winfo_screenheight()
-    # 计算顶部偏移量 (5% of screen height)
-    offset = int(screen_height * 0.05)
-    # 设置窗口初始位置
-    root.geometry(f"+0+{offset}")
 
     app = ImageCropper(root)
     root.mainloop()
