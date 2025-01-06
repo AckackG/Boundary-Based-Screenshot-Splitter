@@ -63,6 +63,8 @@ class ImageCropper:
         self.rect = None
         self.selection = None
         self.vertical_selection = None  # 垂直分割选择
+        self.current_language = "zh"  # 默认语言为中文
+        self.setup_language()
 
         # 创建按钮框架
         self.button_frame = tk.Frame(self.root, bg="#f0f0f0")
@@ -77,6 +79,58 @@ class ImageCropper:
         # 创建一个队列用于线程间通信
         self.log_queue = queue.Queue()
         self.root.after(100, self.process_log_queue)  # 定期处理日志队列
+
+    def setup_language(self):
+        self.text = {
+            "en": {
+                "title": "Image Cropping Tool",
+                "open_button": "Open Image",
+                "crop_button": "Crop Width",
+                "split_button": "Select Split",
+                "process_button": "Process Image",
+                "log_label": "Processing Log",
+                "warn_select_feature": "Must select a feature area",
+                "warn_select_both": "Please select both crop width and feature area",
+                "warn_no_split_points": "No matching split points found",
+                "msg_loading_image": "Loading image: {}",
+                "msg_image_loaded": "Image loaded, size: {}x{}",
+                "msg_cropped_width": "Cropped width: {}",
+                "msg_selected_width_range": "Selected crop width range: {}",
+                "msg_selected_feature_range": "Selected feature area range: {}",
+                "msg_found_split_points": "Found {} split points",
+                "msg_processing_started": "Start processing image",
+                "msg_processing_completed": "Processing completed",
+                "msg_pdf_saved_to": "Processing completed! PDF saved to: {}",
+                "err_processing_image": "Error processing image: {}",
+                "err_opening_folder": "Error opening folder: {}",
+                "chinese": "中文",
+                "english": "English",
+            },
+            "zh": {
+                "title": "图片裁剪工具",
+                "open_button": "打开图片",
+                "crop_button": "裁剪宽度",
+                "split_button": "选择分割",
+                "process_button": "处理图片",
+                "log_label": "处理日志",
+                "warn_select_feature": "必须选择特征区域",
+                "warn_select_both": "请先选择裁剪宽度和特征区域",
+                "warn_no_split_points": "未找到匹配的分割点",
+                "msg_loading_image": "正在加载图片：{}",
+                "msg_image_loaded": "图片加载完成，尺寸：{}x{}",
+                "msg_cropped_width": "裁剪后的宽度：{}",
+                "msg_selected_width_range": "已选择裁剪宽度范围：{}",
+                "msg_selected_feature_range": "已选择特征区域范围：{}",
+                "msg_found_split_points": "找到 {} 个分割点",
+                "msg_processing_started": "开始处理图片",
+                "msg_processing_completed": "图片处理完成",
+                "msg_pdf_saved_to": "处理完成！PDF保存在：{}",
+                "err_processing_image": "处理图片时出错：{}",
+                "err_opening_folder": "打开文件夹时出错：{}",
+                "chinese": "中文",
+                "english": "English",
+            },
+        }
 
     def create_widgets(self, initial_height):
         # 创建主框架，用于左右布局
@@ -93,28 +147,54 @@ class ImageCropper:
         self.right_frame = tk.Frame(self.main_frame, bg="#f0f0f0")
         self.right_frame.pack(side="right", fill="y", padx=(5, 0))
 
+        # 创建语言切换框架
+        self.language_frame = tk.Frame(self.root, bg="#f0f0f0")
+        self.language_frame.pack(side="top", anchor="ne", padx=5, pady=5)
+
+        self.chinese_button = tk.Button(
+            self.language_frame,
+            text=self.text[self.current_language]["chinese"],
+            command=lambda: self.switch_language("zh"),
+        )
+        self.chinese_button.pack(side="left")
+
+        self.english_button = tk.Button(
+            self.language_frame,
+            text=self.text[self.current_language]["english"],
+            command=lambda: self.switch_language("en"),
+        )
+        self.english_button.pack(side="left")
+
         # 创建按钮框架（放在左侧框架顶部）
         self.button_frame = tk.Frame(self.left_frame, bg="#f0f0f0")
         self.button_frame.pack(side="top", fill="x", pady=(0, 5))
 
         # 创建所有按钮
         self.open_button = tk.Button(
-            self.button_frame, text="打开图片", command=self.open_image
+            self.button_frame,
+            text=self.text[self.current_language]["open_button"],
+            command=self.open_image,
         )
         self.open_button.pack(side="left", padx=5)
 
         self.crop_button = tk.Button(
-            self.button_frame, text="裁剪宽度", command=self.crop_width
+            self.button_frame,
+            text=self.text[self.current_language]["crop_button"],
+            command=self.crop_width,
         )
         self.crop_button.pack(side="left", padx=5)
 
         self.split_button = tk.Button(
-            self.button_frame, text="选择分割", command=self.prepare_split
+            self.button_frame,
+            text=self.text[self.current_language]["split_button"],
+            command=self.prepare_split,
         )
         self.split_button.pack(side="left", padx=5)
 
         self.process_button = tk.Button(
-            self.button_frame, text="处理图片", command=self.start_process_image
+            self.button_frame,
+            text=self.text[self.current_language]["process_button"],
+            command=self.start_process_image,
         )
         self.process_button.pack(side="left", padx=5)
 
@@ -129,9 +209,11 @@ class ImageCropper:
 
         # 添加日志文本框（放在右侧框架）
         # 添加标题标签
-        tk.Label(self.right_frame, text="处理日志", bg="#f0f0f0").pack(
-            side="top", pady=(0, 5)
-        )
+        tk.Label(
+            self.right_frame,
+            text=self.text[self.current_language]["log_label"],
+            bg="#f0f0f0",
+        ).pack(side="top", pady=(0, 5))
 
         self.log_text = tk.Text(
             self.right_frame, width=30, height=20, bg="white", fg="black"
@@ -145,6 +227,25 @@ class ImageCropper:
         # 关联滚动条和文本框
         self.log_text.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.log_text.yview)
+
+    def switch_language(self, language):
+        self.current_language = language
+        self.update_ui_text()
+
+    def update_ui_text(self):
+        lang = self.current_language
+        self.root.title(self.text[lang]["title"])
+        self.open_button.config(text=self.text[lang]["open_button"])
+        self.crop_button.config(text=self.text[lang]["crop_button"])
+        self.split_button.config(text=self.text[lang]["split_button"])
+        self.process_button.config(text=self.text[lang]["process_button"])
+        # 找到日志标签并更新文本
+        for widget in self.right_frame.winfo_children():
+            if isinstance(widget, tk.Label):
+                widget.config(text=self.text[lang]["log_label"])
+                break
+        self.chinese_button.config(text=self.text[lang]["chinese"])
+        self.english_button.config(text=self.text[lang]["english"])
 
     def update_button_states(self, state):
         """更新按钮状态"""
@@ -187,11 +288,15 @@ class ImageCropper:
 
         if file_path:
             logger.debug(f"选择文件：{file_path}")
-            self.log_message(f"正在加载图片：{file_path}")
+            self.log_message(
+                self.text[self.current_language]["msg_loading_image"].format(file_path)
+            )
             # 处理图片
             preview_image, image_info = self.processor.load_image(file_path)
             self.log_message(
-                f"图片加载完成，尺寸：{image_info.width}x{image_info.height}"
+                self.text[self.current_language]["msg_image_loaded"].format(
+                    image_info.width, image_info.height
+                )
             )
 
             # 限制窗口高度为屏幕的 80%
@@ -238,7 +343,11 @@ class ImageCropper:
                 self.canvas.delete(self.rect)
                 self.rect = None
 
-            print(f"裁剪后的宽度：{end_x - start_x}")
+            print(
+                self.text[self.current_language]["msg_cropped_width"].format(
+                    end_x - start_x
+                )
+            )
 
             # 更新按钮状态
             self.update_button_states("cropped")
@@ -246,7 +355,9 @@ class ImageCropper:
     def prepare_split(self):
         """准备分割区域选择"""
         if not self.vertical_selection:
-            messagebox.showwarning("警告", "必须选择特征区域")
+            messagebox.showwarning(
+                "警告", self.text[self.current_language]["warn_select_feature"]
+            )
             return
 
         # 只更新按钮状态，不进行计算
@@ -256,7 +367,9 @@ class ImageCropper:
         """启动图片处理线程"""
         if not all([self.selection, self.vertical_selection]):
             logger.warning("未选择裁剪宽度或特征区域")
-            messagebox.showwarning("警告", "请先选择裁剪宽度和特征区域")
+            messagebox.showwarning(
+                "警告", self.text[self.current_language]["warn_select_both"]
+            )
             return
 
         # 创建并启动线程
@@ -268,6 +381,7 @@ class ImageCropper:
 
         try:
             logger.info("开始处理图片")
+            self.log_message(self.text[self.current_language]["msg_processing_started"])
 
             # 获取分割区域
             start_y, end_y = self.vertical_selection
@@ -277,10 +391,16 @@ class ImageCropper:
             self.split_points = self.processor.split_points
 
             if not self.split_points:
-                messagebox.showwarning("警告", "未找到匹配的分割点")
+                messagebox.showwarning(
+                    "警告", self.text[self.current_language]["warn_no_split_points"]
+                )
                 return
 
-            self.log_message(f"找到 {len(self.split_points)} 个分割点")
+            self.log_message(
+                self.text[self.current_language]["msg_found_split_points"].format(
+                    len(self.split_points)
+                )
+            )
 
             # 获取原始图片路径
             file_path = self.processor.original_image.filename
@@ -296,17 +416,25 @@ class ImageCropper:
 
             pdf_path = splitter.process()
             logger.success("图片处理完成")
+            self.log_message(
+                self.text[self.current_language]["msg_processing_completed"]
+            )
 
             # 打开PDF所在文件夹
             pdf_dir = Path(pdf_path).parent
-            self.log_message(f"处理完成！PDF保存在：{pdf_dir}")
+            self.log_message(
+                self.text[self.current_language]["msg_pdf_saved_to"].format(pdf_dir)
+            )
 
             # 使用 after 方法在主线程中打开文件夹
             self.root.after(100, self.open_folder, pdf_dir)
 
         except Exception as e:
             logger.error(f"处理图片时出错：{str(e)}")
-            messagebox.showerror("错误", f"处理图片时出错：{str(e)}")
+            messagebox.showerror(
+                "错误",
+                self.text[self.current_language]["err_processing_image"].format(str(e)),
+            )
         finally:
             self.root.config(cursor="")  # 恢复鼠标状态
 
@@ -329,12 +457,15 @@ class ImageCropper:
         """在主线程中安全地打开文件夹"""
         try:
             if os.name == "nt":  # Windows
-                os.startfile(folder_path)
+                os.startfile(str(folder_path))
             else:  # Linux/Mac
                 subprocess.run(["xdg-open", str(folder_path)])
         except Exception as e:
             logger.error(f"打开文件夹时出错：{str(e)}")
-            messagebox.showerror("错误", f"打开文件夹时出错：{str(e)}")
+            messagebox.showerror(
+                "错误",
+                self.text[self.current_language]["err_opening_folder"].format(str(e)),
+            )
 
     def on_press(self, event):
         self.start_x = event.x
@@ -384,7 +515,11 @@ class ImageCropper:
                     max(self.start_x, event.x)
                 )
                 self.selection = (real_start_x, real_end_x)
-                self.log_message(f"已选择裁剪宽度范围：{self.selection}")
+                self.log_message(
+                    self.text[self.current_language]["msg_selected_width_range"].format(
+                        self.selection
+                    )
+                )
             elif self.split_button["state"] == "normal":
                 # 水平选择（分割选择）
                 real_start_y = self.processor.get_real_coordinates(
@@ -394,7 +529,11 @@ class ImageCropper:
                     max(self.start_y, event.y)
                 )
                 self.vertical_selection = (real_start_y, real_end_y)
-                self.log_message(f"已选择特征区域范围：{self.vertical_selection}")
+                self.log_message(
+                    self.text[self.current_language][
+                        "msg_selected_feature_range"
+                    ].format(self.vertical_selection)
+                )
 
     def log_message(self, message: str):
         """向日志区域和文件添加消息"""
