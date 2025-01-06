@@ -45,6 +45,8 @@ class ImageSplitter:
         # 获取源文件名（不含扩展名）
         self.source_name = Path(image_path).stem
 
+        self.template_height = 0  # 初始化模板高度
+
     def _log(self, message: str):
         """输出日志"""
         if self.log_callback:
@@ -63,6 +65,7 @@ class ImageSplitter:
         # 2. 提取特征模板
         self._log("正在提取特征模板...")
         template = self._extract_template(cropped_image)
+        self.template_height = template.shape[0]  # 保存模板高度
 
         # 3. 寻找分割点
         self._log("正在寻找分割点...")
@@ -133,7 +136,13 @@ class ImageSplitter:
             end_y = split_points[i + 1]
 
             # 裁剪图片
-            cropped_image = image[start_y:end_y]
+            cropped_image_with_template = image[start_y:end_y]
+
+            # 去除顶部的模板部分
+            if i > 0:  # 第一张图片不需要去除顶部
+                cropped_image = cropped_image_with_template[self.template_height :]
+            else:
+                cropped_image = cropped_image_with_template
 
             # 生成输出文件名
             output_path = self.output_dir / f"{self.source_name}_{i+1}.png"
